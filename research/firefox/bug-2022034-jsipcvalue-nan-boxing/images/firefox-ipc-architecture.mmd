@@ -1,0 +1,45 @@
+---
+config:
+  theme: base
+  themeVariables:
+    background: '#ffffff'
+    fontFamily: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif
+    primaryColor: '#f8fafc'
+    primaryBorderColor: '#334155'
+    primaryTextColor: '#172033'
+    lineColor: '#334155'
+  flowchart:
+    curve: linear
+    htmlLabels: false
+    nodeSpacing: 32
+    rankSpacing: 42
+---
+flowchart TB
+    subgraph Content["Sandboxed content process"]
+        direction LR
+        Module["Firefox module"]
+        Child["JSWindowActorChild: sendAsyncMessage()"]
+        WGC["WindowGlobalChild: FromJSVal()"]
+
+        Module --> Child --> WGC
+    end
+
+    Raw["RawMessage"]
+
+    subgraph ParentProcess["Parent process"]
+        direction LR
+        WGP["WindowGlobalParent: ReceiveRawMessage()"]
+        Manager["JSActorManager: ToJSVal()"]
+        Parent["JSWindowActorParent"]
+
+        WGP --> Manager --> Parent
+    end
+
+    Content --> Raw --> ParentProcess
+
+    classDef content fill:#eff6ff,stroke:#2459b3,stroke-width:2px,color:#172033
+    classDef parent fill:#f0fdf4,stroke:#26713d,stroke-width:2px,color:#172033
+    classDef transport fill:#fff7ed,stroke:#c2410c,stroke-width:2px,color:#172033
+    class Module,Child,WGC content
+    class WGP,Manager,Parent parent
+    class Raw transport

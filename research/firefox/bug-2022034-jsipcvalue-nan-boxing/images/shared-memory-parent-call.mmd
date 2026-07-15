@@ -1,0 +1,38 @@
+---
+config:
+  theme: base
+  themeVariables:
+    background: '#ffffff'
+    fontFamily: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif
+    actorBkg: '#ffffff'
+    actorBorder: '#475569'
+    actorTextColor: '#172033'
+    lineColor: '#334155'
+    signalColor: '#334155'
+    signalTextColor: '#172033'
+    noteBkgColor: '#fff7ed'
+    noteBorderColor: '#c2410c'
+    noteTextColor: '#172033'
+  sequence:
+    messageMargin: 44
+    noteMargin: 18
+---
+sequenceDiagram
+    box rgb(239, 246, 255) Sandboxed content process
+        participant PoC as SBX
+    end
+    participant Shared as IPDL shared memory
+    box rgb(240, 253, 244) Parent process
+        participant Parent as Firefox parent
+    end
+
+    Note over PoC,Parent: Fake object graph
+    PoC->>Shared: Write first fake JSObject
+    PoC->>Parent: First tagged NaN
+    Shared-->>Parent: Fake JSObject bytes
+    Parent->>Shared: strcpy() writes XUL pointer
+    Shared-->>PoC: XUL pointer
+    PoC->>Shared: Write second fake JSObject
+    PoC->>Parent: Second tagged NaN
+    Shared-->>Parent: x0 and x6
+    Parent->>Parent: Launch Calculator

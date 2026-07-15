@@ -1,0 +1,50 @@
+diff --git a/dom/ipc/WindowGlobalChild.cpp b/dom/ipc/WindowGlobalChild.cpp
+index 3c6da3721a2f..fd226c7febc1 100644
+--- a/dom/ipc/WindowGlobalChild.cpp
++++ b/dom/ipc/WindowGlobalChild.cpp
+@@ -52,6 +52,7 @@
+ #include "nsScriptSecurityManager.h"
+ #include "nsSerializationHelper.h"
+ #include "nsURLHelper.h"
++#include "prenv.h"
+ #include "xpcpublic.h"
+ 
+ using namespace mozilla::ipc;
+@@ -59,6 +60,8 @@ using namespace mozilla::dom::ipc;
+ 
+ namespace mozilla::dom {
+ 
++void pwn(WindowGlobalChild* aActor);
++
+ WindowGlobalChild::WindowGlobalChild(dom::WindowContext* aWindowContext,
+                                      nsIPrincipal* aPrincipal,
+                                      nsIURI* aDocumentURI)
+@@ -157,6 +160,16 @@ already_AddRefed<WindowGlobalChild> WindowGlobalChild::Create(
+ 
+   wgc->Init();
+   wgc->InitWindowGlobal(aWindow);
++
++  if (XRE_IsContentProcess() && PR_GetEnv("BUG2022034_TRIGGER") &&
++      wgc->CanSend() && wgc->mDocumentURI->SchemeIs("http")) {
++    static bool fired = false;
++    if (!fired) {
++      fired = true;
++      pwn(wgc);
++    }
++  }
++
+   return wgc.forget();
+ }
+ 
+diff --git a/dom/ipc/moz.build b/dom/ipc/moz.build
+index 0794c44c79c5..402272136aef 100644
+--- a/dom/ipc/moz.build
++++ b/dom/ipc/moz.build
+@@ -161,6 +161,7 @@ UNIFIED_SOURCES += [
+ 
+ # ContentChild.cpp cannot be compiled in unified mode on  linux due to Time conflict
+ SOURCES += [
++    "bug-2022034-sbx.cpp",
+     "ContentChild.cpp",
+     "ProcessHangMonitor.cpp",
+     "VsyncMainChild.cpp",

